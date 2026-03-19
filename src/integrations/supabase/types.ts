@@ -382,6 +382,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_otp_verified: { Args: { otp_id: string }; Returns: undefined }
     }
     Enums: {
       account_status: "pending" | "active" | "rejected" | "suspended"
