@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import {
   Users, GraduationCap, BookOpen, Shield, ClipboardCheck,
