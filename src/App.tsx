@@ -11,6 +11,12 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Approvals from "./pages/Approvals";
 import ChangePassword from "./pages/ChangePassword";
+import UserManagement from "./pages/UserManagement";
+import Subjects from "./pages/Subjects";
+import Schedules from "./pages/Schedules";
+import Attendance from "./pages/Attendance";
+import SecurityLogs from "./pages/SecurityLogs";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +44,12 @@ const App = () => (
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/approvals" element={<ProtectedRoute><DashboardLayout><Approvals /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/users" element={<ProtectedRoute><DashboardLayout><UserManagement /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/subjects" element={<ProtectedRoute><DashboardLayout><Subjects /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/schedules" element={<ProtectedRoute><DashboardLayout><Schedules /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/attendance" element={<ProtectedRoute><DashboardLayout><Attendance /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/security" element={<ProtectedRoute><DashboardLayout><SecurityLogs /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardLayout><SettingsPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
