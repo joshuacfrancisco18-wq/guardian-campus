@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { OTPVerificationModal } from '@/components/OTPVerificationModal';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,11 +40,46 @@ const Login = () => {
         if (profile?.status === 'pending') {
           await supabase.auth.signOut();
           toast({ title: 'Account Pending', description: 'Your account is awaiting admin approval.', variant: 'destructive' });
+          setLoading(false);
           return;
         }
         if (profile?.status === 'rejected') {
           await supabase.auth.signOut();
           toast({ title: 'Account Rejected', description: 'Your registration was rejected. Contact admin.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Sign out temporarily - need OTP verification first
+      await supabase.auth.signOut();
+      setPendingEmail(email);
+      setShowOtp(true);
+    } catch (error: any) {
+      toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerified = async () => {
+    setShowOtp(false);
+    // Re-sign in after OTP verification
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: pendingEmail, password });
+      if (error) throw error;
+
+      // Check for force_password_change
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('force_password_change')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile?.force_password_change) {
+          navigate('/change-password');
           return;
         }
       }
@@ -50,8 +88,6 @@ const Login = () => {
       navigate('/dashboard');
     } catch (error: any) {
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -136,35 +172,15 @@ const Login = () => {
                       <Label htmlFor="email">Email Address</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="you@institution.edu"
-                          className="pl-10"
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          required
-                        />
+                        <Input id="email" type="email" placeholder="you@institution.edu" className="pl-10" value={email} onChange={e => setEmail(e.target.value)} required />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          className="pl-10 pr-10"
-                          value={password}
-                          onChange={e => setPassword(e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                        >
+                        <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10 pr-10" value={password} onChange={e => setPassword(e.target.value)} required />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-foreground">
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -187,9 +203,7 @@ const Login = () => {
                   <p className="text-sm text-muted-foreground text-center">
                     Face recognition login will be available after you register your face data.
                   </p>
-                  <Button variant="outline" disabled className="w-full">
-                    Coming Soon
-                  </Button>
+                  <Button variant="outline" disabled className="w-full">Coming Soon</Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -197,12 +211,18 @@ const Login = () => {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-primary hover:underline">
-              Register here
-            </Link>
+            <Link to="/register" className="font-medium text-primary hover:underline">Register here</Link>
           </p>
         </motion.div>
       </div>
+
+      <OTPVerificationModal
+        open={showOtp}
+        email={pendingEmail}
+        purpose="login"
+        onVerified={handleOtpVerified}
+        onCancel={() => setShowOtp(false)}
+      />
     </div>
   );
 };
