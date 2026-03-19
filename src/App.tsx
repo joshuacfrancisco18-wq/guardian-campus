@@ -11,6 +11,12 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Approvals from "./pages/Approvals";
 import ChangePassword from "./pages/ChangePassword";
+import UserManagement from "./pages/UserManagement";
+import Subjects from "./pages/Subjects";
+import Schedules from "./pages/Schedules";
+import Attendance from "./pages/Attendance";
+import SecurityLogs from "./pages/SecurityLogs";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
