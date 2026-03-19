@@ -38,12 +38,13 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
   ]);
 
   const blinkCountRef = useRef(0);
-  const prevEARRef = useRef(0.3);
+  const earHistoryRef = useRef<number[]>([]);
   const blinkStateRef = useRef<'open' | 'closed'>('open');
   const initialNoseRef = useRef<{ x: number; y: number } | null>(null);
   const headMovedRef = useRef(false);
   const descriptorsRef = useRef<Float32Array[]>([]);
   const finalDescriptorRef = useRef<Float32Array | null>(null);
+  const frameCountRef = useRef(0);
 
   const updateStep = useCallback((id: string, completed: boolean) => {
     setLivenessSteps(prev => prev.map(s => s.id === id ? { ...s, completed } : s));
