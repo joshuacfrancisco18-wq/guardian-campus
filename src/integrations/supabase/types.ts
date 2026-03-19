@@ -14,16 +14,379 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      approval_requests: {
+        Row: {
+          created_at: string
+          id: string
+          requested_role: Database["public"]["Enums"]["app_role"]
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["account_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          requested_role: Database["public"]["Enums"]["app_role"]
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["account_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          requested_role?: Database["public"]["Enums"]["app_role"]
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["account_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      attendance_records: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          schedule_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          subject_id: string
+          suspicious: boolean
+          time_in: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          schedule_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          subject_id: string
+          suspicious?: boolean
+          time_in?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          schedule_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+          subject_id?: string
+          suspicious?: boolean
+          time_in?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      face_embeddings: {
+        Row: {
+          created_at: string
+          embedding: Json
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding: Json
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: Json
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      face_recognition_logs: {
+        Row: {
+          anti_spoof_passed: boolean | null
+          confidence: number | null
+          created_at: string
+          id: string
+          liveness_passed: boolean | null
+          metadata: Json | null
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          anti_spoof_passed?: boolean | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          liveness_passed?: boolean | null
+          metadata?: Json | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          anti_spoof_passed?: boolean | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          liveness_passed?: boolean | null
+          metadata?: Json | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      otp_logs: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          otp_code: string
+          purpose: string
+          user_id: string | null
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          purpose?: string
+          user_id?: string | null
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          purpose?: string
+          user_id?: string | null
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          course: string | null
+          created_at: string
+          department: string | null
+          email: string
+          face_registered: boolean
+          force_password_change: boolean
+          full_name: string
+          id: string
+          otp_enabled: boolean
+          section: string | null
+          status: Database["public"]["Enums"]["account_status"]
+          student_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          course?: string | null
+          created_at?: string
+          department?: string | null
+          email: string
+          face_registered?: boolean
+          force_password_change?: boolean
+          full_name: string
+          id?: string
+          otp_enabled?: boolean
+          section?: string | null
+          status?: Database["public"]["Enums"]["account_status"]
+          student_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          course?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string
+          face_registered?: boolean
+          force_password_change?: boolean
+          full_name?: string
+          id?: string
+          otp_enabled?: boolean
+          section?: string | null
+          status?: Database["public"]["Enums"]["account_status"]
+          student_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      schedules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          room: string | null
+          section: string
+          start_time: string
+          subject_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          room?: string | null
+          section: string
+          start_time: string
+          subject_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          room?: string | null
+          section?: string
+          start_time?: string
+          subject_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_logs: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          suspicious: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          suspicious?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          suspicious?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_status: "pending" | "active" | "rejected" | "suspended"
+      app_role: "admin" | "teacher" | "student"
+      attendance_status: "present" | "late" | "absent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +513,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_status: ["pending", "active", "rejected", "suspended"],
+      app_role: ["admin", "teacher", "student"],
+      attendance_status: ["present", "late", "absent"],
+    },
   },
 } as const
