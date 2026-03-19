@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { OTPVerificationModal } from '@/components/OTPVerificationModal';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
 
   const updateForm = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -33,6 +35,12 @@ const Register = () => {
       toast({ title: 'Error', description: 'Password must be at least 6 characters.', variant: 'destructive' });
       return;
     }
+    // Show OTP verification before creating account
+    setShowOtp(true);
+  };
+
+  const handleOtpVerified = async () => {
+    setShowOtp(false);
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -46,7 +54,6 @@ const Register = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Update profile with additional data
         await supabase.from('profiles').update({
           full_name: form.fullName,
           student_id: form.studentId || null,
@@ -56,13 +63,11 @@ const Register = () => {
           status: 'pending',
         }).eq('user_id', data.user.id);
 
-        // Create role
         await supabase.from('user_roles').insert({
           user_id: data.user.id,
           role: form.role,
         });
 
-        // Create approval request
         await supabase.from('approval_requests').insert({
           user_id: data.user.id,
           requested_role: form.role,
@@ -83,11 +88,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
             <Shield className="h-5 w-5 text-white" />
@@ -120,9 +121,7 @@ const Register = () => {
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={form.role} onValueChange={v => updateForm('role', v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="student"><span className="flex items-center gap-2"><GraduationCap className="h-4 w-4" />Student</span></SelectItem>
                     <SelectItem value="teacher"><span className="flex items-center gap-2"><BookOpen className="h-4 w-4" />Teacher</span></SelectItem>
@@ -132,30 +131,15 @@ const Register = () => {
 
               {form.role === 'student' && (
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Student ID</Label>
-                    <Input placeholder="STU-001" value={form.studentId} onChange={e => updateForm('studentId', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Section</Label>
-                    <Input placeholder="A" value={form.section} onChange={e => updateForm('section', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Course</Label>
-                    <Input placeholder="BSIT" value={form.course} onChange={e => updateForm('course', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Department</Label>
-                    <Input placeholder="CCS" value={form.department} onChange={e => updateForm('department', e.target.value)} />
-                  </div>
+                  <div className="space-y-2"><Label>Student ID</Label><Input placeholder="STU-001" value={form.studentId} onChange={e => updateForm('studentId', e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Section</Label><Input placeholder="A" value={form.section} onChange={e => updateForm('section', e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Course</Label><Input placeholder="BSIT" value={form.course} onChange={e => updateForm('course', e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Department</Label><Input placeholder="CCS" value={form.department} onChange={e => updateForm('department', e.target.value)} /></div>
                 </div>
               )}
 
               {form.role === 'teacher' && (
-                <div className="space-y-2">
-                  <Label>Department</Label>
-                  <Input placeholder="Computer Science" value={form.department} onChange={e => updateForm('department', e.target.value)} />
-                </div>
+                <div className="space-y-2"><Label>Department</Label><Input placeholder="Computer Science" value={form.department} onChange={e => updateForm('department', e.target.value)} /></div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
@@ -163,25 +147,12 @@ const Register = () => {
                   <Label>Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      className="pl-10"
-                      value={form.password}
-                      onChange={e => updateForm('password', e.target.value)}
-                      required
-                    />
+                    <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10" value={form.password} onChange={e => updateForm('password', e.target.value)} required />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Confirm Password</Label>
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={form.confirmPassword}
-                    onChange={e => updateForm('confirmPassword', e.target.value)}
-                    required
-                  />
+                  <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={form.confirmPassword} onChange={e => updateForm('confirmPassword', e.target.value)} required />
                 </div>
               </div>
 
@@ -204,6 +175,14 @@ const Register = () => {
           </CardContent>
         </Card>
       </motion.div>
+
+      <OTPVerificationModal
+        open={showOtp}
+        email={form.email}
+        purpose="registration"
+        onVerified={handleOtpVerified}
+        onCancel={() => setShowOtp(false)}
+      />
     </div>
   );
 };
