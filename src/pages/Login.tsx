@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { OTPVerificationModal } from '@/components/OTPVerificationModal';
+import FaceCapture from '@/components/FaceCapture';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [pendingPassword, setPendingPassword] = useState('');
+  const [faceLoginActive, setFaceLoginActive] = useState(false);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,15 +31,9 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Check profile status
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('status')
-          .eq('user_id', user.id)
-          .single();
-        
+        const { data: profile } = await supabase.from('profiles').select('status').eq('user_id', user.id).single();
         if (profile?.status === 'pending') {
           await supabase.auth.signOut();
           toast({ title: 'Account Pending', description: 'Your account is awaiting admin approval.', variant: 'destructive' });
@@ -45,15 +42,16 @@ const Login = () => {
         }
         if (profile?.status === 'rejected') {
           await supabase.auth.signOut();
-          toast({ title: 'Account Rejected', description: 'Your registration was rejected. Contact admin.', variant: 'destructive' });
+          toast({ title: 'Account Rejected', description: 'Your registration was rejected.', variant: 'destructive' });
           setLoading(false);
           return;
         }
       }
 
-      // Sign out temporarily - need OTP verification first
+      // Sign out and verify via OTP
       await supabase.auth.signOut();
       setPendingEmail(email);
+      setPendingPassword(password);
       setShowOtp(true);
     } catch (error: any) {
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
@@ -62,22 +60,50 @@ const Login = () => {
     }
   };
 
+  const handleFaceCapture = async (descriptor: number[]) => {
+    setFaceLoginActive(false);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('face-match', {
+        body: { descriptor },
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast({ title: 'Face Not Recognized', description: data?.error || 'No matching face found.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      // Face matched — send OTP to matched email
+      setPendingEmail(data.email);
+      setPendingPassword(''); // No password for face login
+      toast({ title: 'Face Recognized!', description: `Welcome, ${data.full_name}. Please verify with OTP.` });
+      setShowOtp(true);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Face recognition failed.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOtpVerified = async () => {
     setShowOtp(false);
-    // Re-sign in after OTP verification
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: pendingEmail, password });
-      if (error) throw error;
+      if (pendingPassword) {
+        // Email+Password login path
+        const { error } = await supabase.auth.signInWithPassword({ email: pendingEmail, password: pendingPassword });
+        if (error) throw error;
+      } else {
+        // Face login path — use admin sign-in via edge function or magic link
+        // For now, prompt user to enter password after face verification
+        toast({ title: 'Verified!', description: 'Please enter your password to complete login.' });
+        setEmail(pendingEmail);
+        return;
+      }
 
-      // Check for force_password_change
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('force_password_change')
-          .eq('user_id', user.id)
-          .single();
-
+        const { data: profile } = await supabase.from('profiles').select('force_password_change').eq('user_id', user.id).single();
         if (profile?.force_password_change) {
           navigate('/change-password');
           return;
@@ -119,9 +145,7 @@ const Login = () => {
               <p className="text-xs text-white/70 uppercase tracking-widest">AI Attendance System</p>
             </div>
           </div>
-          <h2 className="text-4xl font-bold leading-tight mb-4">
-            Secure Classroom<br />Management
-          </h2>
+          <h2 className="text-4xl font-bold leading-tight mb-4">Secure Classroom<br />Management</h2>
           <p className="text-white/80 leading-relaxed">
             AI-powered face recognition attendance with multi-factor authentication and real-time monitoring.
           </p>
@@ -161,7 +185,7 @@ const Login = () => {
           <Tabs defaultValue="email" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="email" className="gap-2"><Mail className="h-4 w-4" />Email</TabsTrigger>
-              <TabsTrigger value="face" className="gap-2"><ScanFace className="h-4 w-4" />Face ID</TabsTrigger>
+              <TabsTrigger value="face" className="gap-2" onClick={() => setFaceLoginActive(true)}><ScanFace className="h-4 w-4" />Face ID</TabsTrigger>
             </TabsList>
 
             <TabsContent value="email">
@@ -195,17 +219,10 @@ const Login = () => {
             </TabsContent>
 
             <TabsContent value="face">
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-6 flex flex-col items-center gap-4">
-                  <div className="w-48 h-48 rounded-full border-4 border-dashed border-primary/30 flex items-center justify-center bg-muted">
-                    <ScanFace className="h-16 w-16 text-primary/40" />
-                  </div>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Face recognition login will be available after you register your face data.
-                  </p>
-                  <Button variant="outline" disabled className="w-full">Coming Soon</Button>
-                </CardContent>
-              </Card>
+              <FaceCapture
+                onCapture={handleFaceCapture}
+                mode="login"
+              />
             </TabsContent>
           </Tabs>
 
