@@ -124,27 +124,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
       updateStep('face_detected', true);
       setStatus('liveness');
 
-      // Step 2: Blink detection with smoothed EAR
-      const ear = getEAR(detection.landmarks);
-      earHistoryRef.current.push(ear);
-      if (earHistoryRef.current.length > 5) earHistoryRef.current.shift();
-      const smoothedEAR = earHistoryRef.current.reduce((a, b) => a + b, 0) / earHistoryRef.current.length;
-
-      // Use adaptive threshold: closed < 0.19, open > 0.22
-      if (blinkStateRef.current === 'open' && smoothedEAR < 0.19) {
-        blinkStateRef.current = 'closed';
-      } else if (blinkStateRef.current === 'closed' && smoothedEAR > 0.22) {
-        blinkStateRef.current = 'open';
-        blinkCountRef.current += 1;
-      }
-
-      if (blinkCountRef.current >= 1) {
-        updateStep('blink', true);
-      } else {
-        setMessage('Please blink naturally');
-      }
-
-      // Step 3: Head movement
+      // Step 2: Head movement
       const nose = getNosePosition(detection.landmarks);
       if (!initialNoseRef.current) {
         initialNoseRef.current = nose;
@@ -157,7 +137,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
         }
       }
 
-      if (!headMovedRef.current && blinkCountRef.current >= 1) {
+      if (!headMovedRef.current) {
         setMessage('Slowly turn your head left or right');
       }
 
