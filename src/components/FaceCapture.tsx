@@ -32,7 +32,6 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
   // Liveness state
   const [livenessSteps, setLivenessSteps] = useState<LivenessStep[]>([
     { id: 'face_detected', label: 'Face Detected', icon: <Camera className="h-4 w-4" />, completed: false },
-    { id: 'blink', label: 'Blink Detection', icon: <Eye className="h-4 w-4" />, completed: false },
     { id: 'head_move', label: 'Head Movement', icon: <RotateCcw className="h-4 w-4" />, completed: false },
     { id: 'anti_spoof', label: 'Anti-Spoofing', icon: <ShieldCheck className="h-4 w-4" />, completed: false },
   ]);
