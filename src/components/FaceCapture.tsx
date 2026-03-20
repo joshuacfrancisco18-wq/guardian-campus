@@ -36,9 +36,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
     { id: 'anti_spoof', label: 'Anti-Spoofing', icon: <ShieldCheck className="h-4 w-4" />, completed: false },
   ]);
 
-  const blinkCountRef = useRef(0);
-  const earHistoryRef = useRef<number[]>([]);
-  const blinkStateRef = useRef<'open' | 'closed'>('open');
+  // blink detection removed
   const initialNoseRef = useRef<{ x: number; y: number } | null>(null);
   const headMovedRef = useRef(false);
   const descriptorsRef = useRef<Float32Array[]>([]);
