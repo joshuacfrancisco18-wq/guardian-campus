@@ -158,7 +158,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
       finalDescriptorRef.current = detection.descriptor;
 
       // Check all steps complete
-      const allComplete = blinkCountRef.current >= 1 && headMovedRef.current && descriptorsRef.current.length >= 5;
+      const allComplete = headMovedRef.current && descriptorsRef.current.length >= 5;
       if (allComplete) {
         updateStep('anti_spoof', true);
         setProgress(100);
