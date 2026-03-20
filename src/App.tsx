@@ -17,6 +17,10 @@ import Schedules from "./pages/Schedules";
 import Attendance from "./pages/Attendance";
 import SecurityLogs from "./pages/SecurityLogs";
 import SettingsPage from "./pages/SettingsPage";
+import ScanAttendance from "./pages/ScanAttendance";
+import Students from "./pages/Students";
+import MyAttendance from "./pages/MyAttendance";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
