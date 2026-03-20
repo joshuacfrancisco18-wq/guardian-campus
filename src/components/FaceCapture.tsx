@@ -32,14 +32,11 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
   // Liveness state
   const [livenessSteps, setLivenessSteps] = useState<LivenessStep[]>([
     { id: 'face_detected', label: 'Face Detected', icon: <Camera className="h-4 w-4" />, completed: false },
-    { id: 'blink', label: 'Blink Detection', icon: <Eye className="h-4 w-4" />, completed: false },
     { id: 'head_move', label: 'Head Movement', icon: <RotateCcw className="h-4 w-4" />, completed: false },
     { id: 'anti_spoof', label: 'Anti-Spoofing', icon: <ShieldCheck className="h-4 w-4" />, completed: false },
   ]);
 
-  const blinkCountRef = useRef(0);
-  const earHistoryRef = useRef<number[]>([]);
-  const blinkStateRef = useRef<'open' | 'closed'>('open');
+  // blink detection removed
   const initialNoseRef = useRef<{ x: number; y: number } | null>(null);
   const headMovedRef = useRef(false);
   const descriptorsRef = useRef<Float32Array[]>([]);
@@ -127,27 +124,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
       updateStep('face_detected', true);
       setStatus('liveness');
 
-      // Step 2: Blink detection with smoothed EAR
-      const ear = getEAR(detection.landmarks);
-      earHistoryRef.current.push(ear);
-      if (earHistoryRef.current.length > 5) earHistoryRef.current.shift();
-      const smoothedEAR = earHistoryRef.current.reduce((a, b) => a + b, 0) / earHistoryRef.current.length;
-
-      // Use adaptive threshold: closed < 0.19, open > 0.22
-      if (blinkStateRef.current === 'open' && smoothedEAR < 0.19) {
-        blinkStateRef.current = 'closed';
-      } else if (blinkStateRef.current === 'closed' && smoothedEAR > 0.22) {
-        blinkStateRef.current = 'open';
-        blinkCountRef.current += 1;
-      }
-
-      if (blinkCountRef.current >= 1) {
-        updateStep('blink', true);
-      } else {
-        setMessage('Please blink naturally');
-      }
-
-      // Step 3: Head movement
+      // Step 2: Head movement
       const nose = getNosePosition(detection.landmarks);
       if (!initialNoseRef.current) {
         initialNoseRef.current = nose;
@@ -160,7 +137,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
         }
       }
 
-      if (!headMovedRef.current && blinkCountRef.current >= 1) {
+      if (!headMovedRef.current) {
         setMessage('Slowly turn your head left or right');
       }
 
@@ -181,7 +158,7 @@ const FaceCapture: React.FC<FaceCaptureProps> = ({ onCapture, onCancel, mode = '
       finalDescriptorRef.current = detection.descriptor;
 
       // Check all steps complete
-      const allComplete = blinkCountRef.current >= 1 && headMovedRef.current && descriptorsRef.current.length >= 5;
+      const allComplete = headMovedRef.current && descriptorsRef.current.length >= 5;
       if (allComplete) {
         updateStep('anti_spoof', true);
         setProgress(100);
