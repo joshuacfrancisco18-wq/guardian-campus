@@ -19,6 +19,7 @@ import SecurityLogs from "./pages/SecurityLogs";
 import SettingsPage from "./pages/SettingsPage";
 import ScanAttendance from "./pages/ScanAttendance";
 import Students from "./pages/Students";
+import Teachers from "./pages/Teachers";
 import MyAttendance from "./pages/MyAttendance";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";

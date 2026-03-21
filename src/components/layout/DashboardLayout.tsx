@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 const adminLinks = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/dashboard/users', icon: Users, label: 'User Management' },
+  { to: '/dashboard/teachers', icon: GraduationCap, label: 'Teachers' },
+  { to: '/dashboard/students', icon: GraduationCap, label: 'Students' },
   { to: '/dashboard/approvals', icon: Shield, label: 'Approvals' },
   { to: '/dashboard/subjects', icon: BookOpen, label: 'Subjects' },
   { to: '/dashboard/schedules', icon: Calendar, label: 'Schedules' },
