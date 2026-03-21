@@ -37,8 +37,9 @@ const StatCard = ({ icon: Icon, label, value, color, delay }: { icon: any; label
 );
 
 const Dashboard = () => {
-  const { roles, profile } = useAuth();
+  const { roles, profile, user } = useAuth();
   const isAdmin = roles.includes('admin');
+  const isTeacher = roles.includes('teacher');
   const [stats, setStats] = useState<Stats>({
     totalStudents: 0, totalTeachers: 0, totalAdmins: 0,
     pendingApprovals: 0, presentToday: 0, lateToday: 0, absentToday: 0,
@@ -46,32 +47,39 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!isAdmin) return;
-
       const today = new Date().toISOString().split('T')[0];
 
-      const [students, teachers, admins, pending, present, late, absent] = await Promise.all([
-        supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-        supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
-        supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
-        supabase.from('approval_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'present'),
-        supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'late'),
-        supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'absent'),
-      ]);
-
-      setStats({
-        totalStudents: students.count || 0,
-        totalTeachers: teachers.count || 0,
-        totalAdmins: admins.count || 0,
-        pendingApprovals: pending.count || 0,
-        presentToday: present.count || 0,
-        lateToday: late.count || 0,
-        absentToday: absent.count || 0,
-      });
+      if (isAdmin) {
+        const [students, teachers, admins, pending, present, late, absent] = await Promise.all([
+          supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+          supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
+          supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
+          supabase.from('approval_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'present'),
+          supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'late'),
+          supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'absent'),
+        ]);
+        setStats({
+          totalStudents: students.count || 0, totalTeachers: teachers.count || 0,
+          totalAdmins: admins.count || 0, pendingApprovals: pending.count || 0,
+          presentToday: present.count || 0, lateToday: late.count || 0, absentToday: absent.count || 0,
+        });
+      } else if (isTeacher && user) {
+        // Get teacher's schedules first, then count attendance for those schedules
+        const { data: mySchedules } = await supabase.from('schedules').select('id').eq('teacher_id', user.id);
+        const scheduleIds = mySchedules?.map(s => s.id) || [];
+        if (scheduleIds.length > 0) {
+          const [present, late, absent] = await Promise.all([
+            supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('schedule_id', scheduleIds).eq('date', today).eq('status', 'present'),
+            supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('schedule_id', scheduleIds).eq('date', today).eq('status', 'late'),
+            supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('schedule_id', scheduleIds).eq('date', today).eq('status', 'absent'),
+          ]);
+          setStats(prev => ({ ...prev, presentToday: present.count || 0, lateToday: late.count || 0, absentToday: absent.count || 0 }));
+        }
+      }
     };
     fetchStats();
-  }, [isAdmin]);
+  }, [isAdmin, isTeacher, user]);
 
   return (
     <div className="space-y-6">

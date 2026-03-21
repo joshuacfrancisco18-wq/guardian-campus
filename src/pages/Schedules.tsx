@@ -15,9 +15,10 @@ import { toast } from 'sonner';
 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const Schedules = () => {
-  const { roles } = useAuth();
+  const { roles, user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = roles.includes('admin');
+  const isTeacher = roles.includes('teacher');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     subject_id: '',
@@ -30,9 +31,13 @@ const Schedules = () => {
   });
 
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ['schedules'],
+    queryKey: ['schedules', isTeacher ? user?.id : 'all'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('schedules').select('*, subjects(name, code)').order('day_of_week');
+      let query = supabase.from('schedules').select('*, subjects(name, code)').order('day_of_week');
+      if (isTeacher && user) {
+        query = query.eq('teacher_id', user.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
