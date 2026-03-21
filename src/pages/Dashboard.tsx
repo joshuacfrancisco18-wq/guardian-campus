@@ -109,7 +109,15 @@ const Dashboard = () => {
         </>
       )}
 
-      {!isAdmin && (
+      {isTeacher && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard icon={UserCheck} label="Present Today" value={stats.presentToday} color="bg-success" delay={0} />
+          <StatCard icon={Clock} label="Late Today" value={stats.lateToday} color="bg-warning" delay={0.05} />
+          <StatCard icon={Users} label="Absent Today" value={stats.absentToday} color="bg-destructive" delay={0.1} />
+        </div>
+      )}
+
+      {!isAdmin && !isTeacher && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard icon={UserCheck} label="Present Days" value={0} color="bg-success" delay={0} />
           <StatCard icon={Clock} label="Late Days" value={0} color="bg-warning" delay={0.05} />
