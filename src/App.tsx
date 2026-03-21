@@ -57,6 +57,7 @@ const App = () => (
             <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardLayout><SettingsPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/scan" element={<ProtectedRoute><DashboardLayout><ScanAttendance /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/students" element={<ProtectedRoute><DashboardLayout><Students /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/teachers" element={<ProtectedRoute><DashboardLayout><Teachers /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/my-attendance" element={<ProtectedRoute><DashboardLayout><MyAttendance /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><DashboardLayout><Profile /></DashboardLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
