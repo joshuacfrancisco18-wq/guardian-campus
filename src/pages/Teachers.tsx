@@ -5,11 +5,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { GraduationCap, Search, UserX, UserCheck } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { GraduationCap, Search, UserX, UserCheck, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Teachers = () => {
   const [search, setSearch] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', department: '' });
   const queryClient = useQueryClient();
 
   const { data: teacherProfiles, isLoading } = useQuery({
@@ -54,6 +58,29 @@ const Teachers = () => {
     onError: () => toast.error('Failed to update status'),
   });
 
+  const createTeacher = useMutation({
+    mutationFn: async (data: typeof form) => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const res = await supabase.functions.invoke('create-teacher', {
+        body: data,
+      });
+
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-teachers'] });
+      toast.success('Teacher account created successfully');
+      setDialogOpen(false);
+      setForm({ full_name: '', email: '', password: '', department: '' });
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to create teacher'),
+  });
+
   const getScheduleCount = (userId: string) =>
     schedules?.filter(s => s.teacher_id === userId).length || 0;
 
@@ -63,6 +90,19 @@ const Teachers = () => {
     (p.department || '').toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.full_name || !form.email || !form.password) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    if (form.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    createTeacher.mutate(form);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -70,9 +110,70 @@ const Teachers = () => {
           <h1 className="text-2xl font-bold tracking-tight">Teachers</h1>
           <p className="text-muted-foreground text-sm">Manage teacher accounts and assignments</p>
         </div>
-        <Badge variant="outline" className="gap-1">
-          <GraduationCap className="h-3 w-3" />{teacherProfiles?.length || 0} teachers
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="gap-1">
+            <GraduationCap className="h-3 w-3" />{teacherProfiles?.length || 0} teachers
+          </Badge>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <Plus className="h-4 w-4" /> Add Teacher
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Teacher Account</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name *</Label>
+                  <Input
+                    id="full_name"
+                    value={form.full_name}
+                    onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
+                    placeholder="Juan Dela Cruz"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="teacher@school.edu"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Temporary Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={form.password}
+                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                    placeholder="Min 6 characters"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    value={form.department}
+                    onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
+                    placeholder="e.g. Computer Science"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={createTeacher.isPending}>
+                  {createTeacher.isPending ? 'Creating...' : 'Create Teacher Account'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="relative max-w-sm">
@@ -90,7 +191,7 @@ const Teachers = () => {
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
               <GraduationCap className="h-10 w-10 mb-3 opacity-50" />
               <p>No teachers found</p>
-              <p className="text-xs mt-1">Teachers will appear here after registration and approval</p>
+              <p className="text-xs mt-1">Click "Add Teacher" to create a teacher account</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
