@@ -43,7 +43,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const primaryRole = roles[0] || 'student';
+  const primaryRole = roles.includes('admin') ? 'admin' : roles.includes('teacher') ? 'teacher' : 'student';
   const links = primaryRole === 'admin' ? adminLinks : primaryRole === 'teacher' ? teacherLinks : studentLinks;
   const initials = profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
 
