@@ -104,6 +104,35 @@ export type Database = {
           },
         ]
       }
+      enrollments: {
+        Row: {
+          created_at: string
+          id: string
+          schedule_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          schedule_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          schedule_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       face_embeddings: {
         Row: {
           created_at: string
