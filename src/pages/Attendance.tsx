@@ -25,7 +25,7 @@ const Attendance = () => {
     queryFn: async () => {
       let query = supabase
         .from('attendance_records')
-        .select('*, subjects(name, code), profiles!attendance_records_student_id_fkey(full_name, student_id)')
+        .select('*, subjects(name, code)')
         .order('date', { ascending: false })
         .limit(100);
 
