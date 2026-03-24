@@ -108,6 +108,9 @@ const Login = () => {
           navigate('/change-password');
           return;
         }
+
+        // Wait briefly for AuthContext to process the session
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       toast({ title: 'Welcome back!', description: 'Login successful.' });
