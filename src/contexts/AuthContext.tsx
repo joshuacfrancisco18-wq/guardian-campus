@@ -51,16 +51,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data: profileData } = await supabase
+    console.log('[Auth] Fetching profile for user:', userId);
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
       .single();
     
-    const { data: rolesData } = await supabase
+    if (profileError) console.error('[Auth] Profile fetch error:', profileError);
+    
+    const { data: rolesData, error: rolesError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId);
+
+    if (rolesError) console.error('[Auth] Roles fetch error:', rolesError);
+    
+    console.log('[Auth] Profile:', profileData?.email, 'Roles:', rolesData?.map(r => r.role));
 
     setProfile(profileData);
     setRoles(rolesData?.map(r => r.role as AppRole) || []);
