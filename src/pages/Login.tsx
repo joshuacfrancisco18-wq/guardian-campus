@@ -33,7 +33,7 @@ const Login = () => {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('status').eq('user_id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('status, otp_enabled, force_password_change').eq('user_id', user.id).single();
         if (profile?.status === 'pending') {
           await supabase.auth.signOut();
           toast({ title: 'Account Pending', description: 'Your account is awaiting admin approval.', variant: 'destructive' });
@@ -46,13 +46,29 @@ const Login = () => {
           setLoading(false);
           return;
         }
-      }
 
-      // Sign out and verify via OTP
-      await supabase.auth.signOut();
-      setPendingEmail(email);
-      setPendingPassword(password);
-      setShowOtp(true);
+        // If OTP is enabled, sign out and verify via OTP
+        if (profile?.otp_enabled) {
+          await supabase.auth.signOut();
+          setPendingEmail(email);
+          setPendingPassword(password);
+          setShowOtp(true);
+          setLoading(false);
+          return;
+        }
+
+        // No OTP required — check force password change
+        if (profile?.force_password_change) {
+          navigate('/change-password');
+          setLoading(false);
+          return;
+        }
+
+        // Wait briefly for AuthContext to process the session
+        await new Promise(resolve => setTimeout(resolve, 500));
+        toast({ title: 'Welcome back!', description: 'Login successful.' });
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
     } finally {
