@@ -80,7 +80,8 @@ const Login = () => {
     setFaceLoginActive(false);
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('face-match', {
+      // Use face-login endpoint for direct sign-in (no password/OTP needed)
+      const { data, error } = await supabase.functions.invoke('face-login', {
         body: { descriptor },
       });
       if (error) throw error;
@@ -90,11 +91,21 @@ const Login = () => {
         return;
       }
 
-      // Face matched — send OTP to matched email
-      setPendingEmail(data.email);
-      setPendingPassword(''); // No password for face login
-      toast({ title: 'Face Recognized!', description: `Welcome, ${data.full_name}. Please verify with OTP.` });
-      setShowOtp(true);
+      // Use the token_hash to verify and create a session directly
+      if (data.token_hash) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: 'magiclink',
+        });
+        if (verifyError) throw verifyError;
+
+        // Wait for AuthContext to process
+        await new Promise(resolve => setTimeout(resolve, 500));
+        toast({ title: 'Welcome back!', description: `Face login successful, ${data.full_name}!` });
+        navigate('/dashboard');
+      } else {
+        throw new Error('Login token not received');
+      }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Face recognition failed.', variant: 'destructive' });
     } finally {
@@ -106,15 +117,8 @@ const Login = () => {
     setShowOtp(false);
     try {
       if (pendingPassword) {
-        // Email+Password login path
         const { error } = await supabase.auth.signInWithPassword({ email: pendingEmail, password: pendingPassword });
         if (error) throw error;
-      } else {
-        // Face login path — use admin sign-in via edge function or magic link
-        // For now, prompt user to enter password after face verification
-        toast({ title: 'Verified!', description: 'Please enter your password to complete login.' });
-        setEmail(pendingEmail);
-        return;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -124,8 +128,6 @@ const Login = () => {
           navigate('/change-password');
           return;
         }
-
-        // Wait briefly for AuthContext to process the session
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
