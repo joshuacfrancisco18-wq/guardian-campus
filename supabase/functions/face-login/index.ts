@@ -96,15 +96,19 @@ Deno.serve(async (req) => {
 
     // Extract the token hash from the generated link
     const actionLink = linkData?.properties?.action_link;
+    console.log("Action link:", actionLink);
     if (!actionLink) {
       throw new Error("Failed to generate login link");
     }
 
     const url = new URL(actionLink);
-    const tokenHash = url.searchParams.get("token_hash") || url.hash?.split("token=")[1];
+    // The token_hash can be in query params or the hash fragment
+    const token = url.searchParams.get("token_hash") 
+      || url.searchParams.get("token")
+      || url.hash?.match(/token=([^&]+)/)?.[1]
+      || url.hash?.match(/token_hash=([^&]+)/)?.[1];
     
-    // Extract token_hash from the action link
-    const token = url.searchParams.get("token_hash");
+    console.log("Extracted token:", token ? "found" : "null", "URL params:", [...url.searchParams.entries()]);
 
     const confidence = Math.max(0, Math.min(1, 1 - bestMatch.distance / THRESHOLD));
 
