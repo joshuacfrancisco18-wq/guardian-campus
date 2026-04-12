@@ -22,6 +22,7 @@ import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
 import MyAttendance from "./pages/MyAttendance";
 import Profile from "./pages/Profile";
+import StudentAttendance from "./pages/StudentAttendance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/dashboard/teachers" element={<ProtectedRoute><DashboardLayout><Teachers /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/my-attendance" element={<ProtectedRoute><DashboardLayout><MyAttendance /></DashboardLayout></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><DashboardLayout><Profile /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/mark-attendance" element={<ProtectedRoute><DashboardLayout><StudentAttendance /></DashboardLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

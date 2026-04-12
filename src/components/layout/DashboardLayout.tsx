@@ -33,6 +33,7 @@ const teacherLinks = [
 
 const studentLinks = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard/mark-attendance', icon: ScanFace, label: 'Mark Attendance' },
   { to: '/dashboard/my-attendance', icon: ClipboardCheck, label: 'My Attendance' },
   { to: '/dashboard/schedules', icon: Calendar, label: 'Schedules' },
   { to: '/dashboard/profile', icon: User, label: 'Profile' },
