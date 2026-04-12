@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, ScanFace } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, ScanFace, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { OTPVerificationModal } from '@/components/OTPVerificationModal';
 import FaceCapture from '@/components/FaceCapture';
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,7 +36,8 @@ const Login = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
   const [pendingPassword, setPendingPassword] = useState('');
-  const [faceLoginActive, setFaceLoginActive] = useState(false);
+  const [faceLoginPending, setFaceLoginPending] = useState(false);
+  const [faceCaptureKey, setFaceCaptureKey] = useState(0);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,38 +92,48 @@ const Login = () => {
   };
 
   const handleFaceCapture = async (descriptor: number[]) => {
-    setFaceLoginActive(false);
+    setFaceLoginPending(true);
     setLoading(true);
+
     try {
-      // Use face-login endpoint for direct sign-in (no password/OTP needed)
-      const { data, error } = await supabase.functions.invoke('face-login', {
-        body: { descriptor },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('face-login', {
+          body: { descriptor },
+        }),
+        20000,
+        'Face recognition is taking too long. Please try again.'
+      );
+
       if (error) throw error;
+
       if (!data?.success) {
         toast({ title: 'Face Not Recognized', description: data?.error || 'No matching face found.', variant: 'destructive' });
-        setLoading(false);
         return;
       }
 
-      // Use the token_hash to verify and create a session directly
-      if (data.token_hash) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: data.token_hash,
-          type: 'magiclink',
-        });
-        if (verifyError) throw verifyError;
-
-        // Wait for AuthContext to process
-        await new Promise(resolve => setTimeout(resolve, 500));
-        toast({ title: 'Welcome back!', description: `Face login successful, ${data.full_name}!` });
-        navigate('/dashboard');
-      } else {
+      if (!data?.token_hash) {
         throw new Error('Login token not received');
       }
+
+      const { error: verifyError } = await withTimeout(
+        supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: 'magiclink',
+        }),
+        20000,
+        'Sign-in confirmation timed out. Please try again.'
+      );
+
+      if (verifyError) throw verifyError;
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast({ title: 'Welcome back!', description: `Face login successful, ${data.full_name}!` });
+      navigate('/dashboard');
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Face recognition failed.', variant: 'destructive' });
+      setFaceCaptureKey(prev => prev + 1);
     } finally {
+      setFaceLoginPending(false);
       setLoading(false);
     }
   };
@@ -206,7 +231,7 @@ const Login = () => {
           <Tabs defaultValue="email" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="email" className="gap-2"><Mail className="h-4 w-4" />Email</TabsTrigger>
-              <TabsTrigger value="face" className="gap-2" onClick={() => setFaceLoginActive(true)}><ScanFace className="h-4 w-4" />Face ID</TabsTrigger>
+              <TabsTrigger value="face" className="gap-2"><ScanFace className="h-4 w-4" />Face ID</TabsTrigger>
             </TabsList>
 
             <TabsContent value="email">
@@ -240,10 +265,23 @@ const Login = () => {
             </TabsContent>
 
             <TabsContent value="face">
-              <FaceCapture
-                onCapture={handleFaceCapture}
-                mode="login"
-              />
+              {faceLoginPending ? (
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="flex min-h-[220px] flex-col items-center justify-center gap-4 p-6 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div className="space-y-1">
+                      <p className="font-medium">Signing you in with Face ID...</p>
+                      <p className="text-sm text-muted-foreground">Please wait while we verify your account.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <FaceCapture
+                  key={faceCaptureKey}
+                  onCapture={handleFaceCapture}
+                  mode="login"
+                />
+              )}
             </TabsContent>
           </Tabs>
 

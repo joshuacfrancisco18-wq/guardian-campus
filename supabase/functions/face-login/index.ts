@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function euclideanDistance(a: number[], b: number[]): number {
@@ -94,21 +94,20 @@ Deno.serve(async (req) => {
 
     if (linkError) throw linkError;
 
-    // Extract the token hash from the generated link
+    // Prefer the hashed token returned by generateLink since verifyOtp expects token_hash
+    const hashedToken = linkData?.properties?.hashed_token;
     const actionLink = linkData?.properties?.action_link;
-    console.log("Action link:", actionLink);
-    if (!actionLink) {
-      throw new Error("Failed to generate login link");
-    }
+    const parsedTokenHash = actionLink
+      ? (() => {
+          const url = new URL(actionLink);
+          return url.searchParams.get("token_hash") || url.hash?.match(/token_hash=([^&]+)/)?.[1] || null;
+        })()
+      : null;
+    const tokenHash = hashedToken || parsedTokenHash;
 
-    const url = new URL(actionLink);
-    // The token_hash can be in query params or the hash fragment
-    const token = url.searchParams.get("token_hash") 
-      || url.searchParams.get("token")
-      || url.hash?.match(/token=([^&]+)/)?.[1]
-      || url.hash?.match(/token_hash=([^&]+)/)?.[1];
-    
-    console.log("Extracted token:", token ? "found" : "null", "URL params:", [...url.searchParams.entries()]);
+    if (!tokenHash) {
+      throw new Error("Failed to generate login token");
+    }
 
     const confidence = Math.max(0, Math.min(1, 1 - bestMatch.distance / THRESHOLD));
 
@@ -127,7 +126,7 @@ Deno.serve(async (req) => {
         success: true,
         full_name: profile.full_name,
         email: profile.email,
-        token_hash: token,
+        token_hash: tokenHash,
         confidence,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
